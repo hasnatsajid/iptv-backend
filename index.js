@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 dotenv.config();
 const userRoutes = require('./routes/user.js');
+const paymentRoutes = require('./routes/payment.js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/user', userRoutes);
+app.use('/payment', paymentRoutes);
 
 app.listen(PORT, async () => {
   try {
