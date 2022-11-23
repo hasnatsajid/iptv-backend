@@ -33,18 +33,14 @@ const makePayment = async (req, res) => {
       '4KgkyCwCTItsIXmEnX1BPyaYuqv2oTD6CXSwwmKypxwQT5aUA8jhurpKBt9xyspKPxr41nGOzZ3m6AGZgVhQTLIjMCNWREkI3oijRTkG8XD25caMc2YXHKq4xJhewzE7'
   ).toString();
 
-  // console.log('MD5 : ', mysign);
-
   try {
     const response = await axios({
       baseURL: 'https://api.cryptomus.com/v1/payment',
       method: 'post',
       headers: {
         merchant: '88678e43-8060-427f-926c-d337853ee43e',
-        // sign: 'bd68fae0966437483880809dfef68b83',
         sign: mysign,
         'Content-Type': 'application/json',
-        // 'Access-Control-Allow-Origin': '*',
       },
       data: paymentData,
     });
@@ -72,18 +68,20 @@ const paymentWebhook = async (req, res) => {
   const myOrder = await Order.findOne({ order_id });
   const { email } = myOrder;
 
-  if (sign === mysign) {
-    if (is_final === true && (status === 'paid' || status === 'paid_over')) {
-      const user = await User.findOne({ email });
-      user.orders.push({ order_id });
-      user.payment_status = 'active';
-      await user.save();
+  try {
+    if (sign === mysign) {
+      if (is_final === true && (status === 'paid' || status === 'paid_over')) {
+        const user = await User.findOne({ email });
+        user.orders.push({ order_id });
+        user.payment_status = 'active';
+        await user.save();
 
-      return res.json({ message: 'User paid' });
+        return res.json({ message: 'User paid' });
+      }
     }
+  } catch (err) {
+    res.status(500).json({ message: 'Something went wrong in your webhook' });
   }
-
-  res.status(500).json({ message: 'Something went wrong in your webhook' });
 };
 
 module.exports = { makePayment, paymentWebhook };
