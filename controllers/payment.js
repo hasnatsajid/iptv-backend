@@ -6,27 +6,18 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 
 const makePayment = async (req, res) => {
-  let { email, ...paymentData } = req.body;
+  let { email, plan, ...paymentData } = req.body;
 
   let { currentId } = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../models/orders.json')));
 
   if (currentId) {
-    paymentData = { ...paymentData, order_id: currentId };
+    paymentData = { ...paymentData, order_id: currentId, additional_data: plan };
   }
 
   let newOrderId = parseInt(currentId);
   newOrderId++;
 
   fs.writeFileSync(path.resolve(__dirname, '../models/orders.json'), JSON.stringify({ currentId: `${newOrderId}` }));
-
-  // var data = {
-  //   order_id: '123123',
-  //   currency: 'USDT',
-  //   amount: '10',
-  //   // is_payment_multiple: false,
-  //   // url_callback: 'https://iptv-backend.hassuu.com/payment/webhook',
-  //   // url_return: 'https://iptv.hassuu.com/auth',
-  // };
 
   const mysign = MD5(
     btoa(JSON.stringify(paymentData)) +
@@ -45,7 +36,30 @@ const makePayment = async (req, res) => {
       data: paymentData,
     });
 
-    const newOrder = { ...response.data.result, email };
+    let numOfMonths;
+    let newDate = new Date();
+    switch (plan) {
+      case 'monthly':
+        numOfMonths = 1;
+        break;
+      case 'tri-monthly':
+        numOfMonths = 3;
+        break;
+      case 'hexa-monthly':
+        numOfMonths = 6;
+        break;
+      case 'yearly':
+        numOfMonths = 12;
+        break;
+
+      default:
+        numOfMonths = 0;
+        break;
+    }
+
+    newDate.setMonth(newDate.getMonth() + numOfMonths);
+
+    const newOrder = { ...response.data.result, email, plan, expiry: newDate.toISOString() };
     const OrderModel = new Order(newOrder);
     OrderModel.save();
 
@@ -58,7 +72,7 @@ const makePayment = async (req, res) => {
 
 const paymentWebhook = async (req, res) => {
   const { sign, ...paymentBody } = req.body;
-  const { order_id, is_final, status } = paymentBody;
+  const { order_id, is_final, status, additional_data } = paymentBody;
 
   const mysign = MD5(
     btoa(JSON.stringify(paymentBody)) +
@@ -71,9 +85,31 @@ const paymentWebhook = async (req, res) => {
   try {
     if (sign === mysign) {
       if (is_final === true && (status === 'paid' || status === 'paid_over')) {
+        let expiryDate = new Date();
+
+        switch (additional_data) {
+          case 'monthly':
+            expiryDate.setMonth(expiryDate.getMonth() + 1);
+            break;
+          case 'tri-monthly':
+            expiryDate.setMonth(expiryDate.getMonth() + 3);
+            break;
+          case 'hexa-monthly':
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+            break;
+          case 'yearly':
+            expiryDate.setMonth(expiryDate.getMonth() + 12);
+            break;
+
+          default:
+            numOfMonths = 0;
+            break;
+        }
+
         const user = await User.findOne({ email });
         user.orders.push({ order_id });
         user.payment_status = 'active';
+        user.order_expiry = expiryDate;
         await user.save();
 
         return res.json({ message: 'User paid' });

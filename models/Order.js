@@ -13,9 +13,16 @@ const orderSchema = new Schema({
   address: String,
   is_final: String,
   url: String,
+  plan: {
+    type: String,
+    enum: ['monthly', 'tri-monthly', 'hexa-monthly', 'yearly'],
+  },
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  expiry: {
+    type: Date,
   },
 });
 

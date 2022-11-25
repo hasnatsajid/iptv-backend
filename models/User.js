@@ -18,6 +18,7 @@ const userSchema = new Schema({
     enum: ['active', 'inactive'],
     default: 'inactive',
   },
+  order_expiry: Date,
 });
 
 module.exports = model('User', userSchema);
