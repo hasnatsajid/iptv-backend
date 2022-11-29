@@ -6,6 +6,8 @@ dotenv.config();
 const userRoutes = require('./routes/user.js');
 const paymentRoutes = require('./routes/payment.js');
 
+const mailer = require('./controllers/mailer.js');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGODB_URI;
@@ -14,6 +16,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/user', userRoutes);
+app.use('/sendmail', mailer);
 app.use('/payment', paymentRoutes);
 
 app.listen(PORT, async () => {
