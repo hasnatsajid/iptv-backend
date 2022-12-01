@@ -7,6 +7,7 @@ const User = require('../models/User');
 
 const makePayment = async (req, res) => {
   let { email, plan, ...paymentData } = req.body;
+  console.log(req.body);
 
   let { currentId } = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../models/orders.json')));
 
