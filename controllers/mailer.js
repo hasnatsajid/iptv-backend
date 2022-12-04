@@ -15,10 +15,10 @@ const sendEmail = (req, res, next) => {
 
   transporter
     .sendMail({
-      to: email,
+      to: 'kobi.iptv@gmail.com',
       from: 'kobi.iptv@gmail.com',
       subject,
-      html: message,
+      html: `${email} says that: ${message}`,
     })
     .then((result) => {
       return res.status(200).json({ status: true, message: 'Message sent successfully :)' });
